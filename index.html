@@ -72,7 +72,7 @@ html,body{height:100%;background:var(--dr);font-family:"Centabel",sans-serif;col
 .zt{padding:4px 10px;border-radius:12px;border:1.5px solid rgba(28,10,0,.13);background:none;font-size:10px;cursor:pointer;color:var(--lat);font-family:"Centabel",sans-serif;transition:all .12s}
 .zt.on{background:var(--acc);border-color:var(--acc);color:#fff}
 .sc{position:relative;width:100%;height:290px;background:var(--cr);border-radius:8px;overflow:hidden}
-.st{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;border:3px solid;cursor:pointer;transition:transform .15s,box-shadow .15s;user-select:none}
+.st{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;border:3px solid;cursor:pointer;transition:transform .15s,box-shadow .15s;user-select:none;aspect-ratio:1}
 .st:hover{transform:scale(1.08);box-shadow:var(--sh)}
 .st.e{background:var(--gl);border-color:var(--grn)}.st.o{background:var(--al);border-color:var(--acc)}
 .stn{font-family:"Centabel",sans-serif;font-size:11px;font-weight:400;color:var(--esp);text-align:center;padding:0 3px;line-height:1.3}
@@ -454,17 +454,17 @@ html,body{height:100%;background:var(--dr);font-family:"Centabel",sans-serif;col
       <div class="cards" id="sa-cards"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px;margin-bottom:11px">
         <div class="period-tabs">
-          <button class="ptab on" onclick="setPeriod("g",this)">Günlük</button>
-          <button class="ptab" onclick="setPeriod("h",this)">Haftalık</button>
-          <button class="ptab" onclick="setPeriod("a",this)">Aylık</button>
+          <button class="ptab on" onclick="setPeriod('g',this)">Günlük</button>
+          <button class="ptab" onclick="setPeriod('h',this)">Haftalık</button>
+          <button class="ptab" onclick="setPeriod('a',this)">Aylık</button>
         </div>
         <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
           <button class="only-sold-btn" id="only-sold-btn" onclick="toggleOnlySold(this)">Sadece Satılanlar</button>
           <span style="font-size:10px;color:var(--lat)">Sırala:</span>
-          <button class="sort-btn on" onclick="setSort("adet",this)">Adet</button>
-          <button class="sort-btn" onclick="setSort("ciro",this)">Ciro</button>
-          <button class="sort-btn" onclick="setSort("kar",this)">Kâr</button>
-          <button class="sort-btn" onclick="setSort("marj",this)">Marj%</button>
+          <button class="sort-btn on" onclick="setSort('adet',this)">Adet</button>
+          <button class="sort-btn" onclick="setSort('ciro',this)">Ciro</button>
+          <button class="sort-btn" onclick="setSort('kar',this)">Kâr</button>
+          <button class="sort-btn" onclick="setSort('marj',this)">Marj%</button>
         </div>
       </div>
       <div class="sales-tbl">
@@ -766,7 +766,7 @@ let pImgD=null,fImgD=null,semo='☕',semo2='☕';
 function handleImg(input,t){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{const i2=new Image();i2.onload=()=>{const c=document.createElement('canvas');const mx=280;let w=i2.width,h=i2.height;if(w>mx){h=Math.round(h*mx/w);w=mx;}c.width=w;c.height=h;c.getContext('2d').drawImage(i2,0,0,w,h);const d=c.toDataURL('image/jpeg',.8);if(t==='p')pImgD=d;else fImgD=d;const aId=t==='p'?'pimg-area':'fimg-area';const area=document.getElementById(aId);area.querySelector('.iu-txt').style.opacity='0';area.querySelector('.iu-icon').style.opacity='0';let im=area.querySelector('img');if(!im){im=document.createElement('img');area.appendChild(im)}im.src=d};i2.src=e.target.result};r.readAsDataURL(f)}
 let zone='all',ctid=null,cord=[],mcat='Tümü',renamingId=null;
 function setZone(z,btn){zone=z;document.querySelectorAll('.zt').forEach(b=>b.classList.remove('on'));btn.classList.add('on');rSchema();rGrid()}
-function rSchema(){const c=document.getElementById('sc');c.innerHTML='';const W=c.offsetWidth||540,H=290;const sx=W/560,sy=H/280;const lbl=(t,x,y)=>{const d=document.createElement('div');d.className='zl';d.textContent=t;d.style.left=x+'px';d.style.top=y+'px';c.appendChild(d)};lbl('DIŞ MEKAN',8,6);lbl('İÇ MEKAN',8,150);const vis=zone==='all'?DB.tables:DB.tables.filter(t=>t.zone===zone);vis.forEach(t=>{const el=document.createElement('div');el.className='st '+(t.occupied?'o':'e');el.style.left=(t.x*sx)+'px';el.style.top=(t.y*sy)+'px';el.style.width=(t.w*sx)+'px';el.style.height=(t.h*sy)+'px';const tot=tTot(t);el.innerHTML=`<div class="stn">${t.label||t.num}</div>${t.occupied?`<div class="sta">₺${tot}</div>`:''}`;el.onclick=()=>openO(t.id);el.oncontextmenu=(e)=>{e.preventDefault();openRename(t.id)};c.appendChild(el)})}
+function rSchema(){const c=document.getElementById('sc');c.innerHTML='';const W=c.offsetWidth||540,H=290;const sx=W/560,sy=H/280;const lbl=(t,x,y)=>{const d=document.createElement('div');d.className='zl';d.textContent=t;d.style.left=x+'px';d.style.top=y+'px';c.appendChild(d)};lbl('DIŞ MEKAN',8,6);lbl('İÇ MEKAN',8,150);const vis=zone==='all'?DB.tables:DB.tables.filter(t=>t.zone===zone);vis.forEach(t=>{const el=document.createElement('div');el.className='st '+(t.occupied?'o':'e');const size=Math.min(t.w*sx,t.h*sy);el.style.left=(t.x*sx)+'px';el.style.top=(t.y*sy)+'px';el.style.width=size+'px';el.style.height=size+'px';const tot=tTot(t);el.innerHTML=`<div class="stn">${t.label||t.num}</div>${t.occupied?`<div class="sta">₺${tot}</div>`:''}`;el.onclick=()=>openO(t.id);el.oncontextmenu=(e)=>{e.preventDefault();openRename(t.id)};c.appendChild(el)})}
 function rGrid(){const vis=zone==='all'?DB.tables:DB.tables.filter(t=>t.zone===zone);document.getElementById('tg').innerHTML=vis.map(t=>`<div class="tc${t.occupied?' o':''}" onclick="openO(${t.id})"><div class="tcn">${t.label||t.num}</div><span class="tcs ${t.occupied?'so':'se'}">${t.occupied?'Dolu':'Boş'}</span>${t.occupied?`<div class="tca">₺${tTot(t)}</div>`:''}<button class="btn bo" style="padding:2px 5px;font-size:8px;margin-top:3px;border-radius:8px" onclick="event.stopPropagation();openRename(${t.id})">✏️</button></div>`).join('')}
 function tTot(t){return(t.order||[]).reduce((s,i)=>{const p=DB.products.find(pr=>pr.id===i.pid);return s+(p?p.price*i.qty:0)+(i.milkExtra||0)*i.qty},0)}
 function updBadge(){document.getElementById('obadge').textContent=DB.tables.filter(t=>t.occupied).length}
