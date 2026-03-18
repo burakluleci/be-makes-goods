@@ -935,7 +935,6 @@ async function confirmSplitPayment(method){
 }
 async function finalizeSplitPayment(){
   const t=DB.tables.find(t=>t.id===ctid);
-  const{sub,disc}=calcTotals();
   const totalPaid=splitState.paid.reduce((s,p)=>s+p.total,0);
   closePayment();showLoad('Ödeme tamamlanıyor…');
   try{
@@ -951,8 +950,14 @@ async function finalizeSplitPayment(){
     await deductStock(cord);
     // Her kişi için ayrı işlem kaydı
     for(const p of splitState.paid){
-      const tr=await sbI('transactions',{type:'income',name:`${t.label||'Masa'} — Kişi ${p.person} (${p.method}) — Bölünmüş`,amount:p.total,payment_method:p.method,user_id:currentUser.id,category:'Satış'});
-      DB.transactions.unshift(tr);
+      const now=new Date().toISOString();
+      const trData={type:'income',name:`${t.label||'Masa'} — Kişi ${p.person} (${p.method}) — Bölünmüş`,amount:p.total,payment_method:p.method,user_id:currentUser?.id||null,category:'Satış',created_at:now};
+      try{
+        const tr=await sbI('transactions',trData);
+        DB.transactions.unshift(tr||{...trData,id:Date.now()});
+      }catch{
+        DB.transactions.unshift({...trData,id:Date.now()});
+      }
     }
     cord.forEach(i=>{if(!DB.salesData[i.pid])DB.salesData[i.pid]={g:0,h:0,a:0};['g','h','a'].forEach(k=>DB.salesData[i.pid][k]+=i.qty)});
     t.order=[];t.occupied=false;t.note='';t.activeOrderId=null;t.discountType=null;t.discountValue=0;
@@ -960,7 +965,15 @@ async function finalizeSplitPayment(){
     const summary=splitState.paid.map(p=>`Kişi ${p.person}: ₺${p.total} ${p.method}`).join(' | ');
     await logA('split_payment',`${t.label} — ${summary}`);
     toast(`✓ Hesap bölündü — Toplam ₺${totalPaid}`);
-  }catch{t.order=[];t.occupied=false;t.note='';t.activeOrderId=null;toast('Yerel kaydedildi')}
+  }catch(e){
+    // Yerel fallback
+    const now=new Date().toISOString();
+    for(const p of splitState.paid){
+      DB.transactions.unshift({type:'income',name:`${t.label||'Masa'} — Kişi ${p.person} (${p.method}) — Bölünmüş`,amount:p.total,payment_method:p.method,category:'Satış',created_at:now,id:Date.now()+p.person});
+    }
+    t.order=[];t.occupied=false;t.note='';t.activeOrderId=null;
+    toast('Yerel kaydedildi');
+  }
   splitState=null;hideLoad();closeO();rSchema();rGrid();updBadge();
 }
 async function confirmPayment(method){const t=DB.tables.find(t=>t.id===ctid);const{sub,disc,total}=calcTotals();closePayment();showLoad('Ödeme alınıyor…');try{const note=document.getElementById('on2').value;let orderId=t.activeOrderId;const orderData={status:'open',table_id:t.id,user_id:currentUser.id,note,total,discount_type:discType||null,discount_value:+document.getElementById('disc-val').value||0,discount_amount:disc};if(!orderId&&cord.length){const ord=await sbI('orders',orderData);orderId=ord.id;const items=cord.map(i=>({order_id:orderId,product_id:i.pid,product_name:DB.products.find(p=>p.id===i.pid)?.name,price:DB.products.find(p=>p.id===i.pid)?.price||0,qty:i.qty,milk_option_id:i.milkId||null,milk_option_name:i.milkName||null,milk_extra_price:i.milkExtra||0}));if(items.length)await sb.from('order_items').insert(items);}if(orderId)await sbU('orders',orderId,{status:'closed',payment_method:method,closed_at:new Date().toISOString(),total,...(disc>0?{discount_type:discType,discount_value:+document.getElementById('disc-val').value||0,discount_amount:disc}:{})});await deductStock(cord);const tr=await sbI('transactions',{type:'income',name:`${t.label||'Masa'} — ${method}${disc>0?' (İndirim: ₺'+disc+')':''}`,amount:total,payment_method:method,user_id:currentUser.id,category:'Satış'});DB.transactions.unshift(tr);cord.forEach(i=>{if(!DB.salesData[i.pid])DB.salesData[i.pid]={g:0,h:0,a:0};['g','h','a'].forEach(k=>DB.salesData[i.pid][k]+=i.qty)});t.order=[];t.occupied=false;t.note='';t.activeOrderId=null;t.discountType=null;t.discountValue=0;await sbU('tables',t.id,{occupied:false});await logA('payment',`${t.label} — ${method} — ₺${total}`);toast(`✓ ₺${total} ${method} ile tahsil edildi${disc>0?' (₺'+disc+' indirim)':''}`);}catch{t.order=[];t.occupied=false;t.note='';t.activeOrderId=null;toast('Yerel kaydedildi')}hideLoad();closeO();rSchema();rGrid();updBadge()}
