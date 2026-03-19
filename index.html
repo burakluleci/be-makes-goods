@@ -1065,34 +1065,41 @@ function closePM(){document.getElementById('pov').classList.remove('on');eid=nul
 async function saveP(){const name=document.getElementById('pn').value.trim();if(!name){toast('Ürün adı gerekli');return}const data={name,category_id:+document.getElementById('pc').value,price:+document.getElementById('pp').value||0,cost:+document.getElementById('pco').value||0,stock:+document.getElementById('pst').value||0,description:document.getElementById('pd').value.trim(),emoji:semo,img_url:pImgD,has_milk:document.getElementById('p-has-milk').checked};showLoad('Kaydediliyor…');try{if(eid){await sbU('products',eid,data);Object.assign(DB.products.find(p=>p.id===eid),data);toast('Güncellendi')}else{const r=await sbI('products',data);DB.products.push(r);toast('Ürün eklendi')}}catch(e){toast('Hata: '+e.message)}hideLoad();closePM();rProd()}
 async function delP(id){if(!confirm('Silinsin mi?'))return;try{await sbD('products',id);DB.products=DB.products.filter(p=>p.id!==id);rProd();toast('Silindi')}catch{toast('Hata')}}
 let fid=null;
-function rForm(){
-  // Her menü ürününü göster, reçetesi varsa içeriği, yoksa "Reçete Ekle" butonu
-  const html=DB.products.map(p=>{
-    // Bu ürüne ait formül var mı?
-    const f=DB.formulas.find(f=>f.product_id===p.id||f.name===p.name);
-    const ings=f?DB.formulaIngredients.filter(i=>i.formula_id===f.id):[];
-    const cat=DB.categories.find(c=>c.id===p.category_id);
-    return`<div class="fcard">
-      <div class="fch">
-        <div class="fcem">${p.img_url?`<img src="${p.img_url}">`:`${p.emoji||'☕'}`}</div>
-        <div><div class="fct">${p.name}</div><div class="fcs">${cat?cat.name.split('&')[0].trim():''} · ₺${p.price}</div></div>
-        <div class="fcard-actions">
-          <button class="ibtn" onclick="openFM(${p.id},${f?f.id:'null'})" title="${f?'Reçete Düzenle':'Reçete Ekle'}" style="${f?'':'color:var(--acc);border-color:var(--acc)'}">
-            ${f?eIco():`<svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>`}
-          </button>
-          ${f?`<button class="ibtn del" onclick="delF(${f.id})" title="Reçeteyi Sil">${dIco()}</button>`:''}
+function rForm() {
+  const g = document.getElementById('formula-grid');
+  if (!g) return;
+
+  // Kategoriye göre filtreleme (Veritabanında 'cat' yaptığın için burayı da güncelledik)
+  const filtered = currentFCat === 'all' ? DB.formulas : DB.formulas.filter(f => f.cat === currentFCat);
+
+  g.innerHTML = filtered.map(f => {
+    let tc = 0; // Toplam Maliyet (Total Cost)
+    
+    // Formül içindeki malzemeleri dön ve stok fiyatıyla çarp
+    if (f.items && Array.isArray(f.items)) {
+      f.items.forEach(i => {
+        const p = DB.products.find(x => x.id == i.pid);
+        if (p) {
+          // unitCostPerUse fonksiyonunu kullanarak hesapla
+          tc += unitCostPerUse(p) * parseFloat(i.qty || 0);
+        }
+      });
+    }
+
+    return `
+      <div class="f-card">
+        <div class="f-info" onclick="openFM(null, ${f.id})">
+          <h3>${f.name}</h3>
+          <p style="font-size:0.85rem; color:#666; margin-top:4px;">
+            Maliyet: <strong style="color:#000;">${tc.toFixed(2)} TL</strong>
+          </p>
         </div>
-      </div>
-      <div class="fcb">
-        ${ings.length?ings.map(i=>{
-          const si=i.stock_item_id?DB.stock.find(s=>s.id===i.stock_item_id):null;
-          return`<div class="frow"><span class="fn">${si?si.name:'?'}</span><span class="fa">${i.amount} ${i.unit||si?.unit||''}</span></div>`;
-        }).join(''):`<div style="font-size:10px;color:var(--lat);padding:4px 0;font-style:italic">Henüz reçete girilmedi</div>`}
-        ${f?`<div class="fcost"><span class="fcl">Maliyet</span><span class="fcv">₺${f.cost||0}</span></div>`:''}
-      </div>
-    </div>`;
+        <div class="f-actions">
+          <button class="ibtn" onclick="openFM(null, ${f.id})">${eIco()}</button>
+          <button class="ibtn del" onclick="delF(${f.id})">${dIco()}</button>
+        </div>
+      </div>`;
   }).join('');
-  document.getElementById('fg').innerHTML=html||'<div class="empty"><div class="ei">🛒</div>Önce menüye ürün ekleyin</div>';
 }
 function openFM(productId, formulaId){
   fid=formulaId||null;
