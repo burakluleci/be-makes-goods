@@ -1069,34 +1069,36 @@ function rForm() {
   const g = document.getElementById('formula-grid');
   if (!g) return;
 
-  // Kategoriye göre filtreleme (Veritabanında 'cat' yaptığın için burayı da güncelledik)
-  const filtered = currentFCat === 'all' ? DB.formulas : DB.formulas.filter(f => f.cat === currentFCat);
+  // 1. Önce ürünleri kategoriye göre filtrele
+  const filteredProducts = currentFCat === 'all' 
+    ? DB.products 
+    : DB.products.filter(p => String(p.category_id) === String(currentFCat));
 
-  g.innerHTML = filtered.map(f => {
-    let tc = 0; // Toplam Maliyet (Total Cost)
+  g.innerHTML = filteredProducts.map(p => {
+    // 2. Bu ürüne ait bir formül var mı bak?
+    const f = DB.formulas.find(x => x.product_id == p.id);
+    let tc = 0;
     
-    // Formül içindeki malzemeleri dön ve stok fiyatıyla çarp
-    if (f.items && Array.isArray(f.items)) {
+    // 3. Eğer formül varsa maliyet hesapla
+    if (f && f.items && Array.isArray(f.items)) {
       f.items.forEach(i => {
-        const p = DB.products.find(x => x.id == i.pid);
-        if (p) {
-          // unitCostPerUse fonksiyonunu kullanarak hesapla
-          tc += unitCostPerUse(p) * parseFloat(i.qty || 0);
-        }
+        const mat = DB.products.find(x => x.id == i.pid);
+        if (mat) tc += unitCostPerUse(mat) * parseFloat(i.qty || 0);
       });
     }
 
     return `
       <div class="f-card">
-        <div class="f-info" onclick="openFM(null, ${f.id})">
-          <h3>${f.name}</h3>
+        <div class="f-info" onclick="openFM(${p.id}, ${f ? f.id : 'null'})">
+          <small style="color:var(--accent); font-weight:bold;">${p.name}</small>
+          <h3>${f ? 'Reçete: ' + f.name : 'Reçete Yok'}</h3>
           <p style="font-size:0.85rem; color:#666; margin-top:4px;">
-            Maliyet: <strong style="color:#000;">${tc.toFixed(2)} TL</strong>
+            Maliyet: <strong style="color:#000;">${tc > 0 ? tc.toFixed(2) + ' TL' : '---'}</strong>
           </p>
         </div>
         <div class="f-actions">
-          <button class="ibtn" onclick="openFM(null, ${f.id})">${eIco()}</button>
-          <button class="ibtn del" onclick="delF(${f.id})">${dIco()}</button>
+          <button class="ibtn" onclick="openFM(${p.id}, ${f ? f.id : 'null'})">${eIco()}</button>
+          ${f ? `<button class="ibtn del" onclick="delF(${f.id})">${dIco()}</button>` : ''}
         </div>
       </div>`;
   }).join('');
