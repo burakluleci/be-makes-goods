@@ -71,7 +71,7 @@ html,body{height:100%;background:var(--dr);font-family:"Centabel",sans-serif;col
 .ztabs{display:flex;gap:3px}
 .zt{padding:4px 10px;border-radius:12px;border:1.5px solid rgba(28,10,0,.13);background:none;font-size:10px;cursor:pointer;color:var(--lat);font-family:"Centabel",sans-serif;transition:all .12s}
 .zt.on{background:var(--acc);border-color:var(--acc);color:#fff}
-.sc{position:relative;width:100%;height:380px;background:#888;border-radius:8px;overflow:hidden}
+.sc{position:relative;width:100%;height:420px;background:#888;border-radius:8px;overflow:hidden}
 .st{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;border:3px solid;cursor:pointer;transition:transform .15s,box-shadow .15s;user-select:none;aspect-ratio:1}
 .st:hover{transform:scale(1.08);box-shadow:var(--sh)}
 .st.e{background:var(--gl);border-color:var(--grn)}.st.o{background:var(--al);border-color:var(--acc)}
@@ -872,12 +872,12 @@ function rSchema(){
   // Table positions — matching the hand-drawn plan (0-1 normalized)
   // Image is ~1060x1060, canvas normalized to 1.0
   const positions=[
-    {id:1,x:.24,y:.10,label:'1'},  // top left — dış
-    {id:2,x:.73,y:.10,label:'2'},  // top right — dış
-    {id:3,x:.42,y:.34,label:'3'},  // mid left — dış
-    {id:4,x:.72,y:.34,label:'4'},  // mid right — dış
-    {id:5,x:.60,y:.72,label:'5'},  // inner center — iç
-    {id:6,x:.10,y:.85,label:'6'},  // inner bottom left — iç
+    {id:1,x:.20,y:.09,label:'1'},  // top left — dış
+    {id:2,x:.72,y:.09,label:'2'},  // top right — dış
+    {id:3,x:.38,y:.32,label:'3'},  // mid left — dış
+    {id:4,x:.70,y:.32,label:'4'},  // mid right — dış
+    {id:5,x:.55,y:.68,label:'5'},  // inner center — iç
+    {id:6,x:.09,y:.82,label:'6'},  // inner bottom left — iç
   ];
   const size=Math.round(W*.13); // circle size
 
