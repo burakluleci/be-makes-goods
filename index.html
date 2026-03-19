@@ -1163,7 +1163,11 @@ async function saveF(){
 function addIngRow(type='stock',selectedId='',amount='',unit='gr'){const row=document.createElement('div');row.className='ing-row';const units=['gr','kg','ml','lt','adet','dilim','paket','kutu'];const opts=DB.stock.map(s=>`<option value="${s.id}" ${s.id==selectedId?'selected':''}>${s.name}</option>`).join('');row.innerHTML=`<select class="fi ing-s" style="flex:1;appearance:none;font-size:11px;cursor:pointer"><option value="">-- Stok seç --</option>${opts}</select><input class="fi ing-a" placeholder="Miktar" value="${amount}" style="width:68px;font-size:11px"><select class="fi ing-u" style="width:62px;appearance:none;font-size:11px;cursor:pointer">${units.map(u=>`<option ${u===unit?'selected':''}>${u}</option>`).join('')}</select><button class="ibtn del" onclick="this.parentElement.remove()" style="flex-shrink:0">${dIco()}</button>`;document.getElementById('ing-list').appendChild(row)}
 async function delF(id){if(!confirm('Reçete silinsin mi?'))return;try{await sbD('formulas',id);DB.formulas=DB.formulas.filter(f=>f.id!==id);DB.formulaIngredients=DB.formulaIngredients.filter(i=>i.formula_id!==id);rForm();toast('Reçete silindi')}catch{}}
 let sid=null;
-function unitCostPerUse(s){const price=s.unit_price||0;const qty=s.purchase_qty||1;if(!price||!qty)return 0;return Math.round(price/qty*1000)/1000}
+function unitCostPerUse(s) {
+  const p = parseFloat(s.price || s.unit_price || 0);
+  const u = parseFloat(s.unit_amount || 1);
+  return p > 0 ? p / u : 0;
+}
 function updateUnitPreview(){const price=+document.getElementById('sprice').value||0;const qty=+document.getElementById('s-purchase-qty').value||1;const unit=document.getElementById('su').value;const punit=document.getElementById('s-purchase-unit').value||'alım';const perUse=qty>0?Math.round(price/qty*1000)/1000:0;document.getElementById('unit-preview').textContent=price>0&&qty>0?`1 ${punit} = ${qty} ${unit} → 1 ${unit} başına ₺${perUse}`:'Fiyat ve miktar girilince maliyet hesaplanır'}
 function rStock(){
   const getC=s=>+(s.current_amount??0);
