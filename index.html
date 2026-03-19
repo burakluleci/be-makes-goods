@@ -1069,30 +1069,41 @@ function rForm() {
   const g = document.getElementById('formula-grid');
   if (!g) return;
 
-  // 1. Önce ürünleri kategoriye göre filtrele
-  const filteredProducts = currentFCat === 'all' 
-    ? DB.products 
-    : DB.products.filter(p => String(p.category_id) === String(currentFCat));
+  // 1. Ürünleri al ve filtrele
+  // Filtreleme yaparken hem 'all' durumunu hem de boş olma durumunu kontrol ediyoruz
+  let filteredProducts = DB.products || [];
+  
+  if (currentFCat && currentFCat !== 'all') {
+    filteredProducts = DB.products.filter(p => String(p.category_id) === String(currentFCat));
+  }
+
+  // Eğer hiç ürün yoksa kullanıcıya bilgi verelim
+  if (filteredProducts.length === 0) {
+    g.innerHTML = '<div style="padding:20px; color:#666;">Bu kategoride ürün bulunamadı.</div>';
+    return;
+  }
 
   g.innerHTML = filteredProducts.map(p => {
-    // 2. Bu ürüne ait bir formül var mı bak?
-    const f = DB.formulas.find(x => x.product_id == p.id);
+    // 2. Bu ürüne ait formülü bul (product_id üzerinden)
+    const f = (DB.formulas || []).find(x => String(x.product_id) === String(p.id));
     let tc = 0;
     
-    // 3. Eğer formül varsa maliyet hesapla
+    // 3. Maliyet hesaplama
     if (f && f.items && Array.isArray(f.items)) {
       f.items.forEach(i => {
-        const mat = DB.products.find(x => x.id == i.pid);
-        if (mat) tc += unitCostPerUse(mat) * parseFloat(i.qty || 0);
+        const mat = (DB.products || []).find(x => String(x.id) === String(i.pid));
+        if (mat) {
+          tc += unitCostPerUse(mat) * parseFloat(i.qty || 0);
+        }
       });
     }
 
     return `
       <div class="f-card">
         <div class="f-info" onclick="openFM(${p.id}, ${f ? f.id : 'null'})">
-          <small style="color:var(--accent); font-weight:bold;">${p.name}</small>
-          <h3>${f ? 'Reçete: ' + f.name : 'Reçete Yok'}</h3>
-          <p style="font-size:0.85rem; color:#666; margin-top:4px;">
+          <small style="color:var(--accent); font-weight:bold; display:block; margin-bottom:2px;">${p.name}</small>
+          <h3 style="margin:0; font-size:1rem;">${f ? 'Reçete: ' + f.name : 'Reçete Tanımla'}</h3>
+          <p style="font-size:0.85rem; color:#666; margin-top:6px; margin-bottom:0;">
             Maliyet: <strong style="color:#000;">${tc > 0 ? tc.toFixed(2) + ' TL' : '---'}</strong>
           </p>
         </div>
