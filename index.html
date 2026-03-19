@@ -1069,29 +1069,34 @@ function rForm() {
   const g = document.getElementById('formula-grid');
   if (!g) return;
 
-  // 1. Ürünleri al ve filtrele
-  // Filtreleme yaparken hem 'all' durumunu hem de boş olma durumunu kontrol ediyoruz
-  let filteredProducts = DB.products || [];
+  // 1. Veri kaynağını kontrol et (Senin kodunda adı 'products' ise onu alır)
+  const allData = DB.products || DB.menu || [];
   
+  // 2. Filtreleme Mantığı (category_id kullanarak)
+  let filtered = allData;
   if (currentFCat && currentFCat !== 'all') {
-    filteredProducts = DB.products.filter(p => String(p.category_id) === String(currentFCat));
+    filtered = allData.filter(p => String(p.category_id) === String(currentFCat));
   }
 
-  // Eğer hiç ürün yoksa kullanıcıya bilgi verelim
-  if (filteredProducts.length === 0) {
-    g.innerHTML = '<div style="padding:20px; color:#666;">Bu kategoride ürün bulunamadı.</div>';
+  // Hata Ayıklama Bilgisi (Eğer liste boşsa nedenini ekranda gösterir)
+  if (filtered.length === 0) {
+    g.innerHTML = `<div style="padding:20px; color:#666; text-align:center;">
+      Ürün bulunamadı. <br>
+      <small>(Kategori: ${currentFCat}, Toplam Veri: ${allData.length})</small>
+    </div>`;
     return;
   }
 
-  g.innerHTML = filteredProducts.map(p => {
-    // 2. Bu ürüne ait formülü bul (product_id üzerinden)
+  g.innerHTML = filtered.map(p => {
+    // 3. Bu ürüne ait formülü bul
     const f = (DB.formulas || []).find(x => String(x.product_id) === String(p.id));
     let tc = 0;
     
-    // 3. Maliyet hesaplama
+    // 4. Maliyet Hesaplama
     if (f && f.items && Array.isArray(f.items)) {
       f.items.forEach(i => {
-        const mat = (DB.products || []).find(x => String(x.id) === String(i.pid));
+        // Malzemeyi ana listeden bul (Maliyet hesabı için)
+        const mat = allData.find(x => String(x.id) === String(i.pid));
         if (mat) {
           tc += unitCostPerUse(mat) * parseFloat(i.qty || 0);
         }
