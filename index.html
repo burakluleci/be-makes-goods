@@ -1137,7 +1137,7 @@ async function saveF(){
   const productId=+document.getElementById('f-product-sel').value;
   if(!productId){toast('Ürün seçin');return}
   const p=DB.products.find(pr=>pr.id===productId);
-  const fData={name:p.name,product_id:productId,cat:document.getElementById('fcat').value,cost:+document.getElementById('fcost2').value||0,emoji:p.emoji||'☕',img_url:p.img_url||null};
+  const fData={name:p.name,cat:document.getElementById('fcat').value,cost:+document.getElementById('fcost2').value||0,emoji:p.emoji||'☕'};
   showLoad('Kaydediliyor…');
   try{
     let fId=fid;
@@ -1150,7 +1150,7 @@ async function saveF(){
       const val=+sel.value||null;
       const amt=parseFloat(r.querySelector('.ing-a').value)||0;
       const u=r.querySelector('.ing-u').value;
-      return{formula_id:fId,stock_item_id:val,amount:amt,unit:u};
+      return{formula_id:fId,stock_item_id:val,amount:amt};
     }).filter(i=>i.amount>0&&i.stock_item_id);
     if(ingData.length){
       const{data,error}=await sb.from('formula_ingredients').insert(ingData).select();
