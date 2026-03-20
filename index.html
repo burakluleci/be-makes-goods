@@ -224,7 +224,7 @@ html,body{height:100%;background:var(--dr);font-family:"Centabel",sans-serif;col
 .fcost{padding-top:6px;display:flex;justify-content:space-between;font-size:10px;border-top:1px solid rgba(28,10,0,.07);margin-top:3px}
 .fcl{color:var(--lat)}.fcv{color:var(--acc)}
 .ing-list{display:flex;flex-direction:column;gap:5px}
-.ing-row{display:flex;gap:4px;align-items:center}
+.ing-row{display:flex;gap:4px;align-items:center;flex-wrap:nowrap}
 .muh-tabs{display:flex;gap:3px;margin-bottom:12px;flex-wrap:wrap}
 .mtab{padding:5px 12px;border-radius:12px;border:1.5px solid rgba(28,10,0,.13);background:none;font-size:11px;cursor:pointer;color:var(--lat);font-family:"Centabel",sans-serif;transition:all .12s}
 .mtab.on{background:var(--esp);border-color:var(--esp);color:var(--cr)}
@@ -1174,6 +1174,22 @@ async function saveF(){
 }
 
 
+
+function updateIngCost(row){
+  if(!row)return;
+  const v=+row.querySelector('.ing-s')?.value||0;
+  const a=parseFloat(row.querySelector('.ing-a')?.value)||0;
+  const u=row.querySelector('.ing-u')?.value||'';
+  const costEl=row.querySelector('.ing-cost');
+  if(!costEl)return;
+  if(v&&a){
+    const si=DB.stock.find(s=>s.id===v);
+    const c=costForIngredient(si,a,u);
+    costEl.textContent=c>0?`₺${c}`:'—';
+  } else {
+    costEl.textContent='';
+  }
+}
 function onIngStockChange(sel){
   const sid2=+sel.value;
   const row=sel.closest('.ing-row');
@@ -1183,10 +1199,12 @@ function onIngStockChange(sel){
   if(sid2){
     const si=DB.stock.find(s=>s.id===sid2);
     if(si&&si.unit){
-      // Birimi stok birimine set et
-      unitSel.value=si.unit;
+      unitSel.value=si.unit; // stok birimine zorla set et
     }
+  } else {
+    unitSel.value=''; // stok seçimi kaldırılınca birimi temizle
   }
+  updateIngCost(row);
   recalcFormulaCost();
 }
 function recalcFormulaCost(){
@@ -1208,8 +1226,30 @@ function recalcFormulaCost(){
     costInput.style.opacity='1';
     note.textContent='';
   }
+  // Her satırın bireysel maliyetini güncelle
+  rows.forEach(r=>updateIngCost(r));
 }
-function addIngRow(type='stock',selectedId='',amount='',unit=''){const row=document.createElement('div');row.className='ing-row';const units=['gr','kg','ml','lt','adet','dilim','paket','kutu'];const opts=DB.stock.map(s=>`<option value="${s.id}" ${s.id==selectedId?'selected':''}>${s.name}</option>`).join('');row.innerHTML=`<select class="fi ing-s" style="flex:1;appearance:none;font-size:11px;cursor:pointer" onchange="onIngStockChange(this);recalcFormulaCost()" oninput="recalcFormulaCost()"><option value="">-- Stok seç --</option>${opts}</select><input class="fi ing-a" placeholder="Miktar" value="${amount}" style="width:68px;font-size:11px" oninput="recalcFormulaCost()"><select class="fi ing-u" style="width:62px;appearance:none;font-size:11px;cursor:pointer" onchange="recalcFormulaCost()">${units.map(u=>`<option ${u===unit?'selected':''}>${u}</option>`).join('')}</select><button class="ibtn del" onclick="this.parentElement.remove()" style="flex-shrink:0">${dIco()}</button>`;document.getElementById('ing-list').appendChild(row)}
+function addIngRow(type='stock',selectedId='',amount='',unit=''){
+  const row=document.createElement('div');
+  row.className='ing-row';
+  row.style.cssText='display:flex;gap:4px;align-items:center;flex-wrap:wrap';
+  const units=['ml','lt','gr','kg','adet','dilim','kutu','paket'];
+  const opts=DB.stock.map(s=>`<option value="${s.id}" ${s.id==selectedId?'selected':''}>${s.name}</option>`).join('');
+  // unit seçili değilse hiçbirini seçme — stok seçince otomatik dolacak
+  const unitOpts=units.map(u=>`<option value="${u}" ${u===unit?'selected':''}>${u}</option>`).join('');
+  row.innerHTML=`
+    <select class="fi ing-s" style="flex:1;min-width:100px;appearance:none;font-size:11px;cursor:pointer" onchange="onIngStockChange(this)" >
+      <option value="">— Stok seçin —</option>${opts}
+    </select>
+    <input class="fi ing-a" placeholder="Miktar" value="${amount}" style="width:60px;font-size:11px" oninput="updateIngCost(this.closest('.ing-row'));recalcFormulaCost()">
+    <select class="fi ing-u" style="width:56px;appearance:none;font-size:11px;cursor:pointer" onchange="updateIngCost(this.closest('.ing-row'));recalcFormulaCost()">
+      <option value="">br</option>${unitOpts}
+    </select>
+    <span class="ing-cost" style="font-size:10px;color:var(--acc);min-width:44px;text-align:right;white-space:nowrap"></span>
+    <button class="ibtn del" onclick="this.closest('.ing-row').remove();recalcFormulaCost()" style="flex-shrink:0">${dIco()}</button>`;
+  document.getElementById('ing-list').appendChild(row);
+  if(selectedId&&unit)updateIngCost(row);
+}
 async function delF(id){if(!confirm('Reçete silinsin mi?'))return;try{await sbD('formulas',id);DB.formulas=DB.formulas.filter(f=>f.id!==id);DB.formulaIngredients=DB.formulaIngredients.filter(i=>i.formula_id!==id);rForm();toast('Reçete silindi')}catch{}}
 let sid=null;
 function unitCostPerUse(s){const price=s.unit_price||0;const qty=s.purchase_qty||1;if(!price||!qty)return 0;return Math.round(price/qty*1000)/1000}
