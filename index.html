@@ -1121,7 +1121,7 @@ function openFM(productId, formulaId){
   document.getElementById('ing-list').innerHTML='';
   if(fid){
     DB.formulaIngredients.filter(i=>i.formula_id===fid).forEach(i=>{
-      if(i.stock_item_id)addIngRow('stock',i.stock_item_id,i.amount,i.unit);
+      if(i.stock_item_id){const _si=DB.stock.find(s=>s.id===i.stock_item_id);addIngRow('stock',i.stock_item_id,i.amount,i.unit||_si?.unit||'');}
     });
   }else addIngRow('stock');
   document.getElementById('fov').classList.add('on');
@@ -1162,12 +1162,23 @@ async function saveF(){
       const val=+sel.value||null;
       const amt=parseFloat(r.querySelector('.ing-a').value)||0;
       const u=r.querySelector('.ing-u').value;
-      return{formula_id:fId,stock_item_id:val,amount:amt};
+      return{formula_id:fId,stock_item_id:val,amount:amt,unit:u};
     }).filter(i=>i.amount>0&&i.stock_item_id);
     if(ingData.length){
-      const{data,error}=await sb.from('formula_ingredients').insert(ingData).select();
+      // unit kolonunu dene, olmayabilir — fallback ile tekrar dene
+      let{data,error}=await sb.from('formula_ingredients').insert(ingData).select();
+      if(error&&error.message&&error.message.includes('unit')){
+        // unit kolonu yok — unit olmadan kaydet
+        const ingDataNoUnit=ingData.map(({unit,...rest})=>rest);
+        const res2=await sb.from('formula_ingredients').insert(ingDataNoUnit).select();
+        data=res2.data; error=res2.error;
+      }
       if(error){console.error('formula_ingredients insert error:',error);toast('❌ Malzeme kayıt hatası: '+error.message);hideLoad();return;}
-      if(data){DB.formulaIngredients=DB.formulaIngredients.filter(i=>i.formula_id!==fId).concat(data);}
+      if(data){
+        // unit bilgisini DB'den dönmeyen veriye ekle (local)
+        const withUnit=data.map((d,i)=>({...d,unit:ingData[i]?.unit||''}));
+        DB.formulaIngredients=DB.formulaIngredients.filter(i=>i.formula_id!==fId).concat(withUnit);
+      }
     }
   }catch(e){console.error('saveF error:',e);hideLoad();toast('❌ Hata: '+(e.message||e));return;}
   hideLoad();closeFM();rForm();
@@ -1232,23 +1243,34 @@ function recalcFormulaCost(){
 function addIngRow(type='stock',selectedId='',amount='',unit=''){
   const row=document.createElement('div');
   row.className='ing-row';
-  row.style.cssText='display:flex;gap:4px;align-items:center;flex-wrap:wrap';
+  row.style.cssText='display:flex;gap:4px;align-items:center;flex-wrap:nowrap';
   const units=['ml','lt','gr','kg','adet','dilim','kutu','paket'];
   const opts=DB.stock.map(s=>`<option value="${s.id}" ${s.id==selectedId?'selected':''}>${s.name}</option>`).join('');
-  // unit seçili değilse hiçbirini seçme — stok seçince otomatik dolacak
-  const unitOpts=units.map(u=>`<option value="${u}" ${u===unit?'selected':''}>${u}</option>`).join('');
+  // Birim option'larında seçim YOK — sonradan JS ile set edilecek
+  const unitOpts=units.map(u=>`<option value="${u}">${u}</option>`).join('');
   row.innerHTML=`
-    <select class="fi ing-s" style="flex:1;min-width:100px;appearance:none;font-size:11px;cursor:pointer" onchange="onIngStockChange(this)" >
+    <select class="fi ing-s" style="flex:1;min-width:100px;appearance:none;font-size:11px;cursor:pointer" onchange="onIngStockChange(this)">
       <option value="">— Stok seçin —</option>${opts}
     </select>
     <input class="fi ing-a" placeholder="Miktar" value="${amount}" style="width:60px;font-size:11px" oninput="updateIngCost(this.closest('.ing-row'));recalcFormulaCost()">
     <select class="fi ing-u" style="width:56px;appearance:none;font-size:11px;cursor:pointer" onchange="updateIngCost(this.closest('.ing-row'));recalcFormulaCost()">
-      <option value="">br</option>${unitOpts}
+      <option value="">—</option>${unitOpts}
     </select>
     <span class="ing-cost" style="font-size:10px;color:var(--acc);min-width:44px;text-align:right;white-space:nowrap"></span>
     <button class="ibtn del" onclick="this.closest('.ing-row').remove();recalcFormulaCost()" style="flex-shrink:0">${dIco()}</button>`;
   document.getElementById('ing-list').appendChild(row);
-  if(selectedId&&unit)updateIngCost(row);
+  // DOM hazır — şimdi birimi JS ile set et
+  const unitSel=row.querySelector('.ing-u');
+  if(unit){
+    // Kaydedilmiş birim var (reçete düzenleme): direkt set et
+    unitSel.value=unit;
+  } else if(selectedId){
+    // Yeni satır ama stok seçili: stok birimini kullan
+    const si=DB.stock.find(s=>s.id==selectedId);
+    if(si&&si.unit) unitSel.value=si.unit;
+  }
+  // Maliyet göster
+  if(selectedId&&amount) updateIngCost(row);
 }
 async function delF(id){if(!confirm('Reçete silinsin mi?'))return;try{await sbD('formulas',id);DB.formulas=DB.formulas.filter(f=>f.id!==id);DB.formulaIngredients=DB.formulaIngredients.filter(i=>i.formula_id!==id);rForm();toast('Reçete silindi')}catch{}}
 let sid=null;
