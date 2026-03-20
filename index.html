@@ -378,7 +378,7 @@ html,body{height:100%;background:var(--dr);font-family:"Centabel",sans-serif;col
       </div>
       <div class="cr2" id="pcr" style="margin-bottom:9px"></div>
       <div class="tbl">
-        <div class="th2" style="display:grid;grid-template-columns:44px 1fr 110px 65px 65px 60px 72px">
+        <div class="th2" style="display:grid;grid-template-columns:44px 1fr 110px 75px 60px 72px">
           <span></span><span>Ürün</span><span>Kategori</span><span>Fiyat</span><span>Stok</span><span>Süt</span><span>İşlem</span>
         </div>
         <div id="pb"></div>
@@ -679,31 +679,29 @@ html,body{height:100%;background:var(--dr);font-family:"Centabel",sans-serif;col
   <div class="pm">
     <div class="pmh"><h2 id="smtitle">Yeni Malzeme</h2><button class="xb" onclick="closeSM()">×</button></div>
     <div class="pmb">
-      <div class="fg"><label class="fl">Malzeme Adı</label><input class="fi" id="sn" placeholder="Kahve Çekirdeği"></div>
+      <div class="fg"><label class="fl">Malzeme Adı</label><input class="fi" id="sn" placeholder="Kahve Çekirdeği, Süt, Şeker…"></div>
       <div style="background:var(--cr);border-radius:10px;padding:11px;display:flex;flex-direction:column;gap:8px">
-        <div style="font-size:10px;color:var(--acc);font-weight:500">📦 Alım Birimi</div>
+        <div style="font-size:10px;color:var(--acc);font-weight:500">📦 Paket Bilgisi</div>
         <div class="fr">
-          <div class="fg"><label class="fl">Alım Birimi</label><input class="fi" id="s-purchase-unit" placeholder="paket, koli, kutu…"></div>
-          <div class="fg"><label class="fl">Alım Fiyatı (₺)</label><input class="fi" type="number" id="sprice" placeholder="0"></div>
+          <div class="fg"><label class="fl">Paket Adı</label><input class="fi" id="s-purchase-unit" placeholder="poşet, kutu, şişe, koli…"></div>
+          <div class="fg"><label class="fl">Paket Fiyatı (₺)</label><input class="fi" type="number" id="sprice" placeholder="0" oninput="updateUnitPreview()"></div>
         </div>
         <div class="fr">
-          <div class="fg"><label class="fl">1 Alım = Kaç Kullanım?</label><input class="fi" type="number" id="s-purchase-qty" placeholder="ör: 1000"></div>
-          <div class="fg"><label class="fl">Kullanım Birimi</label>
-            <select class="fi" id="su" style="appearance:none;cursor:pointer">
-              <option>gr</option><option>kg</option><option>ml</option><option>lt</option><option>adet</option><option>dilim</option><option>kutu</option><option>paket</option>
+          <div class="fg"><label class="fl">Paket İçi Miktar</label><input class="fi" type="number" id="s-purchase-qty" placeholder="ör: 1000" oninput="updateUnitPreview()"></div>
+          <div class="fg"><label class="fl">Ölçü Birimi</label>
+            <select class="fi" id="su" style="appearance:none;cursor:pointer" onchange="updateUnitPreview()">
+              <option>ml</option><option>lt</option><option>gr</option><option>kg</option><option>adet</option><option>dilim</option><option>kutu</option><option>paket</option>
             </select>
           </div>
         </div>
-        <div style="font-size:10px;color:var(--lat)" id="unit-preview">— Birim maliyet hesabı burada görünecek</div>
+        <div style="font-size:10px;color:var(--acc);background:rgba(0,0,0,.05);border-radius:6px;padding:6px 8px" id="unit-preview">Paket bilgilerini doldurunca birim maliyet hesaplanır</div>
       </div>
       <div class="fr">
-        <div class="fg"><label class="fl">Mevcut Miktar (kullanım birimi)</label><input class="fi" type="number" id="sc2" placeholder="0" oninput="updateUnitPreview()"></div>
         <div class="fg"><label class="fl">Min. Seviye</label><input class="fi" type="number" id="smin" placeholder="0"></div>
-      </div>
-      <div class="fr">
         <div class="fg"><label class="fl">Max. Seviye</label><input class="fi" type="number" id="smax" placeholder="0"></div>
-        <div class="fg"><label class="fl">Tedarikçi</label><input class="fi" id="ssup" placeholder="Tedarikçi adı"></div>
       </div>
+      <div class="fg"><label class="fl">Tedarikçi</label><input class="fi" id="ssup" placeholder="Tedarikçi adı (isteğe bağlı)"></div>
+      <input type="hidden" id="sc2" value="0">
     </div>
     <div style="padding:0 16px 10px;display:flex;align-items:center;gap:8px">
       <input type="checkbox" id="s-record-expense" checked style="width:15px;height:15px;accent-color:var(--acc);cursor:pointer">
@@ -1064,7 +1062,7 @@ async function deductStock(items){for(const item of items){const prod=DB.product
 function rOPage(){const occ=DB.tables.filter(t=>t.occupied),box=document.getElementById('opg');if(!occ.length){box.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="ei">☕</div>Aktif sipariş yok</div>';return}box.innerHTML=occ.map(t=>`<div class="ocard"><div class="och" onclick="openO(${t.id})"><div><div class="oct">${t.label||'Masa'}</div><div class="ocs">${(t.order||[]).length} kalem${t.discountType?' · İndirimli':''}</div></div><div class="oca">₺${tTot(t)}</div></div><div class="ocb" onclick="openO(${t.id})">${(t.order||[]).map(i=>{const p=DB.products.find(pr=>pr.id===i.pid);return p?`<div class="frow"><span class="fn">${vi(p,10)} ${p.name}${i.milkName?' ('+i.milkName+')':''}</span><span class="fa">${i.qty}× ₺${(p.price+(i.milkExtra||0))*i.qty}</span></div>`:''}).join('')}${t.note?`<div style="margin-top:4px;font-size:9px;color:var(--lat);font-style:italic">${t.note}</div>`:''}</div><div class="order-actions"><button class="btn bp" style="font-size:10px;flex:1" onclick="openO(${t.id})">✏️ Düzenle</button><button class="btn br2" style="font-size:10px;flex:1" onclick="cancelOrder(${t.id})">🗑️ İptal</button></div></div>`).join('')}
 async function cancelOrder(tableId){if(!confirm('Sipariş iptal edilsin mi?'))return;const t=DB.tables.find(t=>t.id===tableId);showLoad('İptal…');try{if(t.activeOrderId)await sbU('orders',t.activeOrderId,{status:'cancelled',closed_at:new Date().toISOString()});t.order=[];t.occupied=false;t.note='';t.activeOrderId=null;await sbU('tables',tableId,{occupied:false});await logA('cancel',`${t.label} iptal`);toast('İptal edildi');}catch{t.order=[];t.occupied=false;t.note='';t.activeOrderId=null;toast('İptal (yerel)')}hideLoad();rOPage();rSchema();rGrid();updBadge()}
 let pcat='Tümü',eid=null;
-function rProd(){const cats=['Tümü',...DB.categories.map(c=>c.name)];document.getElementById('pcr').innerHTML=cats.map(c=>`<button class="ct2${c===pcat?' on':''}" onclick="setPC('${c}')">${c}</button>`).join('');const q=(document.getElementById('ps').value||'').toLowerCase();let list=pcat==='Tümü'?DB.products:DB.products.filter(p=>{const cat=DB.categories.find(c=>c.id===p.category_id);return cat&&cat.name===pcat});if(q)list=list.filter(p=>p.name.toLowerCase().includes(q));document.getElementById('pb').innerHTML=list.map(p=>{const cat=DB.categories.find(c=>c.id===p.category_id);const sc=p.stock>20?'sok':p.stock>5?'slow':'sout',st=p.stock>20?'Yeterli':p.stock>5?'Az':'Tükendi';return`<div class="tr2b" style="display:grid;grid-template-columns:44px 1fr 110px 65px 65px 60px 72px"><span><div class="prod-img">${p.img_url?`<img src="${p.img_url}">`:`<span style="font-size:15px">${p.emoji||'☕'}</span>`}</div></span><span><strong style="font-weight:400">${p.name}</strong>${p.description?`<span style="color:var(--lat);font-size:9px;margin-left:5px">${p.description}</span>`:''}</span><span><span class="cbadge">${cat?cat.name.split('&')[0].trim():'-'}</span></span><span style="color:var(--acc)">₺${p.price}</span><span><span class="sbadge ${sc}">${st}</span></span><span>${p.has_milk?'🥛':'-'}</span><div style="display:flex;gap:3px;padding:8px 10px;align-items:center"><button class="ibtn" onclick="openPM(${p.id})">${eIco()}</button><button class="ibtn del" onclick="delP(${p.id})">${dIco()}</button></div></div>`}).join('')||'<div class="empty"><div class="ei">🛒</div>Ürün yok</div>'}
+function rProd(){const cats=['Tümü',...DB.categories.map(c=>c.name)];document.getElementById('pcr').innerHTML=cats.map(c=>`<button class="ct2${c===pcat?' on':''}" onclick="setPC('${c}')">${c}</button>`).join('');const q=(document.getElementById('ps').value||'').toLowerCase();let list=pcat==='Tümü'?DB.products:DB.products.filter(p=>{const cat=DB.categories.find(c=>c.id===p.category_id);return cat&&cat.name===pcat});if(q)list=list.filter(p=>p.name.toLowerCase().includes(q));document.getElementById('pb').innerHTML=list.map(p=>{const cat=DB.categories.find(c=>c.id===p.category_id);return`<div class="tr2b" style="display:grid;grid-template-columns:44px 1fr 110px 65px 65px 60px 72px"><span><div class="prod-img">${p.img_url?`<img src="${p.img_url}">`:`<span style="font-size:15px">${p.emoji||'☕'}</span>`}</div></span><span><strong style="font-weight:400">${p.name}</strong>${p.description?`<span style="color:var(--lat);font-size:9px;margin-left:5px">${p.description}</span>`:''}</span><span><span class="cbadge">${cat?cat.name.split('&')[0].trim():'-'}</span></span><span style="color:var(--acc)">₺${p.price}</span><span>${p.has_milk?'🥛':'-'}</span><div style="display:flex;gap:3px;padding:8px 10px;align-items:center"><button class="ibtn" onclick="openPM(${p.id})">${eIco()}</button><button class="ibtn del" onclick="delP(${p.id})">${dIco()}</button></div></div>`}).join('')||'<div class="empty"><div class="ei">🛒</div>Ürün yok</div>'}
 function setPC(c){pcat=c;rProd()}
 function openPM(id){eid=id||null;pImgD=null;const p=id?DB.products.find(p=>p.id===id):null;document.getElementById('pmtitle').textContent=p?'Ürün Düzenle':'Yeni Ürün';document.getElementById('pn').value=p?p.name:'';document.getElementById('pp').value=p?p.price:'';document.getElementById('pco').value=p?p.cost:'';document.getElementById('pst').value=p?p.stock:'';document.getElementById('pd').value=p?p.description||'':'';document.getElementById('p-has-milk').checked=p?p.has_milk||false:false;semo=p?p.emoji||'☕':'☕';const sel=document.getElementById('pc');sel.innerHTML=DB.categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');if(p)sel.value=p.category_id;const area=document.getElementById('pimg-area');const old=area.querySelector('img');if(old)old.remove();area.querySelector('.iu-txt').style.opacity='1';area.querySelector('.iu-icon').style.opacity='1';if(p&&p.img_url){pImgD=p.img_url;area.querySelector('.iu-txt').style.opacity='0';area.querySelector('.iu-icon').style.opacity='0';const im=document.createElement('img');im.src=p.img_url;area.appendChild(im);}document.getElementById('epi').innerHTML=EMOJIS.map(e=>`<button class="eo${e===semo?' on':''}" onclick="pickE(this,'p','${e}')">${e}</button>`).join('');document.getElementById('pov').classList.add('on')}
 function pickE(btn,t,e){document.querySelectorAll(`${t==='p'?'#epi':'#fepi'} .eo`).forEach(b=>b.classList.remove('on'));btn.classList.add('on');if(t==='p')semo=e;else semo2=e}
@@ -1175,6 +1173,18 @@ async function saveF(){
   hideLoad();closeFM();rForm();
 }
 
+
+function onIngStockChange(sel){
+  const sid=+sel.value;
+  const row=sel.closest('.ing-row');
+  if(!row)return;
+  const unitSel=row.querySelector('.ing-u');
+  if(!unitSel)return;
+  if(sid){
+    const si=DB.stock.find(s=>s.id===sid);
+    if(si&&si.unit)unitSel.value=si.unit;
+  }
+}
 function recalcFormulaCost(){
   const rows=[...document.querySelectorAll('.ing-row')];
   const hasStock=rows.some(r=>{const v=+r.querySelector('.ing-s').value||0;const a=parseFloat(r.querySelector('.ing-a').value)||0;return v>0&&a>0;});
@@ -1195,11 +1205,11 @@ function recalcFormulaCost(){
     note.textContent='';
   }
 }
-function addIngRow(type='stock',selectedId='',amount='',unit='gr'){const row=document.createElement('div');row.className='ing-row';const units=['gr','kg','ml','lt','adet','dilim','paket','kutu'];const opts=DB.stock.map(s=>`<option value="${s.id}" ${s.id==selectedId?'selected':''}>${s.name}</option>`).join('');row.innerHTML=`<select class="fi ing-s" style="flex:1;appearance:none;font-size:11px;cursor:pointer" onchange="recalcFormulaCost()" oninput="recalcFormulaCost()"><option value="">-- Stok seç --</option>${opts}</select><input class="fi ing-a" placeholder="Miktar" value="${amount}" style="width:68px;font-size:11px" oninput="recalcFormulaCost()"><select class="fi ing-u" style="width:62px;appearance:none;font-size:11px;cursor:pointer">${units.map(u=>`<option ${u===unit?'selected':''}>${u}</option>`).join('')}</select><button class="ibtn del" onclick="this.parentElement.remove()" style="flex-shrink:0">${dIco()}</button>`;document.getElementById('ing-list').appendChild(row)}
+function addIngRow(type='stock',selectedId='',amount='',unit='gr'){const row=document.createElement('div');row.className='ing-row';const units=['gr','kg','ml','lt','adet','dilim','paket','kutu'];const opts=DB.stock.map(s=>`<option value="${s.id}" ${s.id==selectedId?'selected':''}>${s.name}</option>`).join('');row.innerHTML=`<select class="fi ing-s" style="flex:1;appearance:none;font-size:11px;cursor:pointer" onchange="onIngStockChange(this);recalcFormulaCost()" oninput="recalcFormulaCost()"><option value="">-- Stok seç --</option>${opts}</select><input class="fi ing-a" placeholder="Miktar" value="${amount}" style="width:68px;font-size:11px" oninput="recalcFormulaCost()"><select class="fi ing-u" style="width:62px;appearance:none;font-size:11px;cursor:pointer">${units.map(u=>`<option ${u===unit?'selected':''}>${u}</option>`).join('')}</select><button class="ibtn del" onclick="this.parentElement.remove()" style="flex-shrink:0">${dIco()}</button>`;document.getElementById('ing-list').appendChild(row)}
 async function delF(id){if(!confirm('Reçete silinsin mi?'))return;try{await sbD('formulas',id);DB.formulas=DB.formulas.filter(f=>f.id!==id);DB.formulaIngredients=DB.formulaIngredients.filter(i=>i.formula_id!==id);rForm();toast('Reçete silindi')}catch{}}
 let sid=null;
 function unitCostPerUse(s){const price=s.unit_price||0;const qty=s.purchase_qty||1;if(!price||!qty)return 0;return Math.round(price/qty*1000)/1000}
-function updateUnitPreview(){const price=+document.getElementById('sprice').value||0;const qty=+document.getElementById('s-purchase-qty').value||1;const unit=document.getElementById('su').value;const punit=document.getElementById('s-purchase-unit').value||'alım';const perUse=qty>0?Math.round(price/qty*1000)/1000:0;document.getElementById('unit-preview').textContent=price>0&&qty>0?`1 ${punit} = ${qty} ${unit} → 1 ${unit} başına ₺${perUse}`:'Fiyat ve miktar girilince maliyet hesaplanır'}
+function updateUnitPreview(){const price=+document.getElementById('sprice').value||0;const qty=+document.getElementById('s-purchase-qty').value||0;const unit=document.getElementById('su').value;const punit=document.getElementById('s-purchase-unit').value||'paket';const perUse=qty>0?Math.round(price/qty*1000)/1000:0;const el=document.getElementById('unit-preview');if(price>0&&qty>0){el.textContent=`1 ${punit} = ${qty} ${unit}  →  1 ${unit} = ₺${perUse}`;el.style.color='var(--acc)';}else{el.textContent='Paket bilgilerini doldurunca birim maliyet hesaplanır';el.style.color='var(--lat)';}  }
 function rStock(){
   const getC=s=>+(s.current_amount??0);
   const getMin=s=>+(s.min_amount??0);
@@ -1220,38 +1230,60 @@ function rStock(){
     return;
   }
   const rows=DB.stock.map(s=>{
-    const cur=getC(s),min=getMin(s),max=+(s.max_amount||Math.max(cur,1));
-    const pct=Math.min(100,max>0?Math.round(cur/max*100):0);
+    const cur=getC(s),min=getMin(s);
     const cls=cur<=min?'sout':cur<=min*1.5?'slow':'sok';
     const lbl=cur<=min?'Kritik':cur<=min*1.5?'Düşük':'Normal';
-    const col=cur<=min?'var(--red)':cur<=min*1.5?'var(--amb)':'var(--grn)';
     const price=+(s.unit_price||0);
     const pqty=+(s.purchase_qty||1);
     const cpu=price&&pqty?Math.round(price/pqty*1000)/1000:0;
-    const alimStr=s.purchase_unit?`${s.purchase_unit}=${pqty}${s.unit||''}`:'-';
+    const punit=s.purchase_unit||'';
+    const pkgStr=punit&&pqty?`${punit} (${pqty}${s.unit||''})`:'-';
     const cpuStr=cpu>0?`₺${cpu}/${s.unit||'br'}`:price?`₺${price}`:'-';
-    return`<div class="tr2b" style="display:grid;grid-template-columns:1fr 80px 70px 50px 80px 80px 55px 60px;align-items:center">
+    return`<div class="tr2b" style="display:grid;grid-template-columns:1fr 90px 110px 55px 55px 65px;align-items:center;gap:2px">
       <span style="font-weight:500;font-size:11px">${s.name}</span>
-      <span style="font-size:9px;color:var(--lat)">${alimStr}</span>
-      <span style="font-size:11px">${cur}<span style="color:var(--lat);font-size:9px"> ${s.unit||''}</span></span>
-      <span style="font-size:11px">${min}</span>
+      <span style="font-size:9px;color:var(--lat)">${pkgStr}</span>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button class="ibtn" style="width:22px;height:22px;font-size:14px;padding:0;line-height:1" onclick="adjustStock(${s.id},-1)">−</button>
+        <span style="font-size:11px;min-width:40px;text-align:center">${cur}<span style="color:var(--lat);font-size:9px"> ${s.unit||''}</span></span>
+        <button class="ibtn" style="width:22px;height:22px;font-size:14px;padding:0;line-height:1" onclick="adjustStock(${s.id},1)">+</button>
+      </div>
       <span style="font-size:10px;color:var(--acc)">${cpuStr}</span>
-      <span style="font-size:9px;color:var(--lat)">${s.supplier||'-'}</span>
-      <div style="padding:0 4px"><span class="sbadge ${cls}" style="font-size:8px">${lbl}</span><div class="pbar" style="margin-top:3px"><div class="pfill" style="width:${pct}%;background:${col}"></div></div></div>
-      <div style="display:flex;gap:3px;padding:4px 8px">
+      <span class="sbadge ${cls}" style="font-size:8px;text-align:center">${lbl}</span>
+      <div style="display:flex;gap:3px;padding:4px 6px">
         <button class="ibtn" onclick="openSM(${s.id})">${eIco()}</button>
         <button class="ibtn del" onclick="delStock(${s.id})">${dIco()}</button>
       </div>
     </div>`;
   });
-  document.getElementById('sb2').innerHTML=rows.join('');
+    document.getElementById('sb2').innerHTML=rows.join('');
 }
 
-function openSM(id){sid=id||null;const s=id?DB.stock.find(s=>s.id===id):null;document.getElementById('smtitle').textContent=s?'Malzeme Düzenle':'Yeni Malzeme';document.getElementById('sn').value=s?s.name:'';document.getElementById('su').value=s?s.unit||'gr':'gr';document.getElementById('sc2').value=s?s.current_amount??0:'';document.getElementById('smin').value=s?s.min_amount??0:'';document.getElementById('smax').value=s?s.max_amount??0:'';document.getElementById('sprice').value=s?s.unit_price||0:'';document.getElementById('ssup').value=s?s.supplier||'':'';document.getElementById('s-purchase-unit').value=s?s.purchase_unit||'':'';document.getElementById('s-purchase-qty').value=s?s.purchase_qty||1:1;updateUnitPreview();document.getElementById('sov').classList.add('on')}
+function openSM(id){sid=id||null;const s=id?DB.stock.find(s=>s.id===id):null;document.getElementById('smtitle').textContent=s?'Malzeme Düzenle':'Yeni Malzeme';document.getElementById('sn').value=s?s.name:'';document.getElementById('su').value=s?s.unit||'ml':'ml';document.getElementById('sc2').value=s?s.current_amount??0:0;document.getElementById('smin').value=s?s.min_amount??0:'';document.getElementById('smax').value=s?s.max_amount??0:'';document.getElementById('sprice').value=s?s.unit_price||0:'';document.getElementById('ssup').value=s?s.supplier||'':'';document.getElementById('s-purchase-unit').value=s?s.purchase_unit||'':'';document.getElementById('s-purchase-qty').value=s?s.purchase_qty||'':'';const cb=document.getElementById('s-record-expense');if(cb)cb.checked=!id;updateUnitPreview();document.getElementById('sov').classList.add('on')}
 function closeSM(){document.getElementById('sov').classList.remove('on');sid=null}
 async function saveS(){const name=document.getElementById('sn').value.trim();if(!name){toast('Ad gerekli');return}const newAmt=+document.getElementById('sc2').value||0;const unitPrice=+document.getElementById('sprice').value||0;const purchaseQty=+document.getElementById('s-purchase-qty').value||1;const purchaseUnit=document.getElementById('s-purchase-unit').value.trim();const data={name,unit:document.getElementById('su').value,current_amount:newAmt,min_amount:+document.getElementById('smin').value||0,max_amount:+document.getElementById('smax').value||0,unit_price:unitPrice,purchase_unit:purchaseUnit||null,purchase_qty:purchaseQty,supplier:document.getElementById('ssup').value.trim()};showLoad('Kaydediliyor…');try{if(sid){const old=DB.stock.find(s=>s.id===sid);const prev=old?.current_amount??0;await sbU('stock_items',sid,data);Object.assign(old,data);const diff=newAmt-prev;const recordExp=document.getElementById('s-record-expense')?.checked!==false;
         if(diff>0&&unitPrice>0&&recordExp){const alimAdedi=Math.ceil(diff/purchaseQty);const cost=Math.round(alimAdedi*unitPrice*100)/100;const tr=await sbI('transactions',{type:'expense',name:`Stok: ${name} (+${diff} ${data.unit})`,amount:cost,category:'Malzeme & Stok',user_id:currentUser.id,created_at:new Date().toISOString()});DB.transactions.unshift(tr||{type:'expense',name:`Stok: ${name}`,amount:cost,created_at:new Date().toISOString(),id:Date.now()});toast(`Güncellendi — ₺${cost} gider kaydedildi`)}else toast('Malzeme güncellendi')}else{const r=await sbI('stock_items',data);DB.stock.push(r);const recordExp2=document.getElementById('s-record-expense')?.checked!==false;
         if(newAmt>0&&unitPrice>0&&recordExp2){const alimAdedi=Math.ceil(newAmt/purchaseQty);const cost=Math.round(alimAdedi*unitPrice*100)/100;const tr=await sbI('transactions',{type:'expense',name:`Stok: ${name} (${newAmt} ${data.unit})`,amount:cost,category:'Malzeme & Stok',user_id:currentUser.id,created_at:new Date().toISOString()});DB.transactions.unshift(tr||{type:'expense',name:`Stok: ${name}`,amount:cost,created_at:new Date().toISOString(),id:Date.now()});toast(`Eklendi — ₺${cost} gider kaydedildi`)}else toast('Malzeme eklendi')}}catch(e){toast('Hata: '+e.message)}hideLoad();closeSM();rStock()}
+
+async function adjustStock(id, delta){
+  const s=DB.stock.find(s=>s.id===id);
+  if(!s)return;
+  const newAmt=Math.max(0,+(s.current_amount??0)+delta);
+  // Harcama onay popup — sadece artış ve fiyat varsa
+  let recordExp=false;
+  if(delta>0&&s.unit_price>0){
+    recordExp=confirm(`${s.name} stoğunu +${delta} artırıyorsunuz.\nMuhasebede harcama kaydı oluşturulsun mu?`);
+  }
+  s.current_amount=newAmt;
+  try{
+    await sbU('stock_items',id,{current_amount:newAmt});
+    if(recordExp){
+      const cpu=unitCostPerUse(s);
+      const cost=Math.round(cpu*Math.abs(delta)*100)/100;
+      if(cost>0){const tr=await sbI('transactions',{type:'expense',name:`Stok: ${s.name} (+${delta} ${s.unit||''})`,amount:cost,category:'Malzeme & Stok',user_id:currentUser?.id,created_at:new Date().toISOString()});DB.transactions.unshift(tr||{type:'expense',name:`Stok: ${s.name}`,amount:cost,created_at:new Date().toISOString(),id:Date.now()});}
+    }
+  }catch(e){console.error(e)}
+  rStock();
+}
 async function delStock(id){if(!confirm('Silinsin mi?'))return;try{await sbD('stock_items',id);DB.stock=DB.stock.filter(s=>s.id!==id);rStock();toast('Silindi')}catch{}}
 let muhTab='ozet';
 function setMuhTab(tab,btn){muhTab=tab;document.querySelectorAll('.muh-section').forEach(s=>s.classList.remove('show'));document.querySelectorAll('.mtab').forEach(b=>b.classList.remove('on'));document.getElementById('muh-'+tab).classList.add('show');if(btn)btn.classList.add('on');if(tab==='ozet')rMuhOzet();else if(tab==='harcamalar')rExp();else if(tab==='sabit')rFixed();else if(tab==='yatirim')rInv();else if(tab==='siparisler')loadOrderHistory()}
