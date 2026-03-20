@@ -71,7 +71,7 @@ html,body{height:100%;background:var(--dr);font-family:"Centabel",sans-serif;col
 .ztabs{display:flex;gap:3px}
 .zt{padding:4px 10px;border-radius:12px;border:1.5px solid rgba(28,10,0,.13);background:none;font-size:10px;cursor:pointer;color:var(--lat);font-family:"Centabel",sans-serif;transition:all .12s}
 .zt.on{background:var(--acc);border-color:var(--acc);color:#fff}
-.sc{width:100%;margin-bottom:12px;}
+.sc{width:100%;margin-bottom:12px;max-width:520px;margin-left:auto;margin-right:auto;}
 .st{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;border:3px solid;cursor:pointer;transition:transform .15s,box-shadow .15s;user-select:none;aspect-ratio:1}
 .st:hover{transform:scale(1.08);box-shadow:var(--sh)}
 .st.e{background:var(--gl);border-color:var(--grn)}.st.o{background:var(--al);border-color:var(--acc)}
@@ -367,7 +367,7 @@ html,body{height:100%;background:var(--dr);font-family:"Centabel",sans-serif;col
           <button class="zt" onclick="setZone('ic',this)">İç</button>
         </div>
       </div>
-      <div class="sc" id="sc"><svg id="masa-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 2048 2048" style="display:block;width:100%;height:auto;">
+      <div class="sc" id="sc"><svg id="masa-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 2048 2048" style="display:block;width:100%;height:auto;max-height:calc(100vh - 180px);margin:0 auto;">
 <path fill="#313436" opacity="1.000000" stroke="none" 
 	d="
 M1.000000,884.000000 
