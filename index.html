@@ -3174,47 +3174,36 @@ let zone='all',ctid=null,cord=[],mcat='Tümü',renamingId=null;
 function setZone(z,btn){zone=z;document.querySelectorAll('.zt').forEach(b=>b.classList.remove('on'));btn.classList.add('on');rSchema();rGrid()}
 function rSchema(){
   const vis=zone==='all'?DB.tables:DB.tables.filter(t=>t.zone===zone);
-  const mx=[0,481,1459,967,1655,1392,200];
-  const my=[0,212,207,753,775,1485,1856];
   for(let i=1;i<=6;i++){
     const el=document.getElementById('mc-'+i);
     if(!el)continue;
     const t=vis.find(t=>t.id===i);
     if(!t){el.style.display='none';continue;}
     el.style.display='';
-    el.setAttribute('fill',t.occupied?'rgba(212,116,42,0.6)':'rgba(74,124,89,0.35)');
+    el.setAttribute('fill',t.occupied?'rgba(212,116,42,0.6)':'rgba(74,124,89,0.3)');
     el.setAttribute('stroke',t.occupied?'#d4742a':'#4a7c59');
-    // Masa etiketi
-    let lbl=document.getElementById('ml-'+i);
-    if(!lbl){
-      lbl=document.createElementNS('http://www.w3.org/2000/svg','text');
-      lbl.id='ml-'+i;
-      lbl.setAttribute('text-anchor','middle');
-      lbl.setAttribute('font-size','110');
-      lbl.setAttribute('font-weight','700');
-      lbl.setAttribute('fill','#1a1a1a');
-      lbl.setAttribute('pointer-events','none');
-      el.parentNode.appendChild(lbl);
-    }
-    const tot=tTot(t);
-    lbl.setAttribute('x',mx[i]);
-    lbl.setAttribute('y',t.occupied&&tot>0?my[i]+5:my[i]+40);
-    lbl.textContent=t.label||i;
+    // Sadece dolu ise tutarı göster
     let sub=document.getElementById('ms-'+i);
+    const tot=tTot(t);
     if(t.occupied&&tot>0){
       if(!sub){
         sub=document.createElementNS('http://www.w3.org/2000/svg','text');
         sub.id='ms-'+i;
         sub.setAttribute('text-anchor','middle');
-        sub.setAttribute('font-size','75');
-        sub.setAttribute('fill','#1a1a1a');
+        sub.setAttribute('font-size','90');
+        sub.setAttribute('font-weight','700');
+        sub.setAttribute('fill','#fff');
         sub.setAttribute('pointer-events','none');
         el.parentNode.appendChild(sub);
       }
+      const mx=[0,481,1459,967,1655,1392,200];
+      const my=[0,212,207,753,775,1485,1856];
       sub.setAttribute('x',mx[i]);
-      sub.setAttribute('y',my[i]+105);
+      sub.setAttribute('y',my[i]+35);
       sub.textContent='₺'+tot;
-    }else if(sub){sub.textContent='';}
+    } else if(sub){
+      sub.textContent='';
+    }
   }
   window._masaClick=(id)=>openO(id);
   for(let i=1;i<=6;i++){
