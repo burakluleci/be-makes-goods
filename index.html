@@ -3140,7 +3140,64 @@ async function doReg(){const name=document.getElementById('rn').value.trim(),pin
 function doLogout(){if(!confirm('Çıkış yapılsın mı?'))return;currentUser=null;LS.set('cu',null);document.getElementById('login-screen').classList.remove('hide');document.getElementById('li-pin').value=''}
 function enterApp(){hideLoad();document.getElementById('login-screen').classList.add('hide');setUUI();initApp()}
 function setUUI(){if(!currentUser)return;const ini=currentUser.full_name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);document.getElementById('uav').textContent=ini;document.getElementById('uav').title=currentUser.full_name+' — Çıkış'}
-async function initApp(){showLoad('Yükleniyor…');await loadAll();hideLoad();requestAnimationFrame(()=>{rSchema();rGrid();});updBadge();tick();setInterval(tick,1000);if(isOnline)syncQ()}
+async function initApp(){
+  showLoad('Yükleniyor…');
+  await loadAll();
+  hideLoad();
+  requestAnimationFrame(()=>{rSchema();rGrid();});
+  updBadge();tick();setInterval(tick,1000);
+  if(isOnline)syncQ();
+  setupRealtime();
+}
+
+function setupRealtime(){
+  try{
+    // tables değişince masa planını güncelle
+    sb.channel('rt-tables')
+      .on('postgres_changes',{event:'*',schema:'public',table:'tables'},payload=>{
+        const t=payload.new||payload.old;
+        if(!t)return;
+        if(payload.eventType==='DELETE'){
+          DB.tables=DB.tables.filter(r=>r.id!==t.id);
+        } else {
+          const idx=DB.tables.findIndex(r=>r.id===t.id);
+          if(idx>=0) DB.tables[idx]={...DB.tables[idx],...payload.new};
+          else DB.tables.push(payload.new);
+        }
+        rSchema();rGrid();
+      })
+      .subscribe();
+
+    // orders değişince aktif masayı güncelle
+    sb.channel('rt-orders')
+      .on('postgres_changes',{event:'*',schema:'public',table:'orders'},async payload=>{
+        // Tüm tabloları yeniden yükle (order_items ile birlikte)
+        await loadAll();
+        rSchema();rGrid();
+        // Eğer o masa açıksa siparişi güncelle
+        if(ctid){
+          const t=DB.tables.find(t=>t.id===ctid);
+          if(t){cord=(t.order||[]).map(i=>({...i}));rOItems();}
+        }
+      })
+      .subscribe();
+
+    // transactions değişince muhasebe güncelle
+    sb.channel('rt-transactions')
+      .on('postgres_changes',{event:'*',schema:'public',table:'transactions'},payload=>{
+        if(payload.eventType==='INSERT'&&payload.new){
+          DB.transactions.unshift(payload.new);
+        } else if(payload.eventType==='DELETE'&&payload.old){
+          DB.transactions=DB.transactions.filter(t=>t.id!==payload.old.id);
+        }
+      })
+      .subscribe();
+
+    console.log('✓ Realtime aktif');
+  }catch(e){
+    console.warn('Realtime başlatılamadı:',e);
+  }
+}
 async function loadAll(){try{const[tables,products,stock,formulas,fings,cats,trans,fixed,inv,milk]=await Promise.all([sbG('tables','num'),sbG('products','name'),sbG('stock_items','name'),sbG('formulas','name'),sbG('formula_ingredients','id'),sbG('categories','sort_order'),sbG('transactions','created_at'),sbG('fixed_expenses','name'),sbG('investments','purchase_date'),sbG('milk_options','sort_order')]);DB.tables=tables;DB.products=products;DB.stock=stock;DB.formulas=formulas;DB.formulaIngredients=fings;DB.categories=cats;DB.transactions=trans.reverse();DB.fixedExpenses=fixed;DB.investments=inv.reverse();DB.milkOptions=milk.filter(m=>m.active);
 const orders=await sbG('orders','created_at');const orderItems=await sbG('order_items','id');DB.salesData={};const now=new Date();
 orders.filter(o=>o.status==='closed').forEach(o=>{const items=orderItems.filter(i=>i.order_id===o.id);const d=new Date(o.closed_at||o.created_at);const g=d.toDateString()===now.toDateString(),h=d>new Date(now-7*864e5),a=d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();items.forEach(i=>{if(!DB.salesData[i.product_id])DB.salesData[i.product_id]={g:0,h:0,a:0};if(g)DB.salesData[i.product_id].g+=i.qty;if(h)DB.salesData[i.product_id].h+=i.qty;if(a)DB.salesData[i.product_id].a+=i.qty})});
